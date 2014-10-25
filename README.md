@@ -5,4 +5,6 @@ Removes:
 * behavoir
 * event
 * selection
+* svg/axis
+* svg/brush
 * xhr
