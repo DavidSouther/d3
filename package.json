@@ -1,7 +1,7 @@
 {
-  "name": "d3",
-  "version": "3.4.13",
-  "description": "A small, free JavaScript library for manipulating documents based on data.",
+  "name": "d3-util",
+  "version": "3.4.13-u1",
+  "description": "The utilitiy components of d3.",
   "keywords": [
     "dom",
     "w3c",
@@ -19,11 +19,15 @@
     {
       "name": "Jason Davies",
       "url": "http://jasondavies.com"
+    },
+    {
+      "name": "David Souther",
+      "url": "http://davidsouther.com"
     }
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mbostock/d3.git"
+    "url": "https://github.com/DavidSouther/d3-util.git"
   },
   "main": "index.js",
   "browserify": "d3.js",
@@ -65,7 +69,7 @@
   "licenses": [
     {
       "type": "BSD",
-      "url": "https://github.com/mbostock/d3/blob/master/LICENSE"
+      "url": "https://github.com/DavidSouther/d3-util/blob/master/LICENSE"
     }
   ]
 }
