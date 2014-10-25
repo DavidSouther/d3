@@ -8,5 +8,3 @@ import "chord";
 import "diagonal";
 import "diagonal-radial";
 import "symbol";
-import "axis";
-import "brush";

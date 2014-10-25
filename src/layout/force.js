@@ -1,16 +1,11 @@
-import "../behavior/drag";
 import "../core/identity";
 import "../core/rebind";
-import "../event/event";
-import "../event/dispatch";
-import "../event/timer";
 import "../geom/quadtree";
 import "layout";
 
 // A rudimentary force layout using Gauss-Seidel.
 d3.layout.force = function() {
   var force = {},
-      event = d3.dispatch("start", "tick", "end"),
       size = [1, 1],
       drag,
       alpha,
@@ -58,7 +53,8 @@ d3.layout.force = function() {
   force.tick = function() {
     // simulated annealing, basically
     if ((alpha *= .99) < .005) {
-      event.end({type: "end", alpha: alpha = 0});
+      // TODO NEED Eventing Library
+      // event.end({type: "end", alpha: alpha = 0});
       return true;
     }
 
@@ -125,7 +121,7 @@ d3.layout.force = function() {
       }
     }
 
-    event.tick({type: "tick", alpha: alpha});
+    // event.tick({type: "tick", alpha: alpha});
   };
 
   force.nodes = function(x) {
@@ -199,7 +195,7 @@ d3.layout.force = function() {
       if (x > 0) alpha = x; // we might keep it hot
       else alpha = 0; // or, next tick will dispatch "end"
     } else if (x > 0) { // otherwise, fire it up!
-      event.start({type: "start", alpha: alpha = x});
+      // event.start({type: "start", alpha: alpha = x});
       d3.timer(force.tick);
     }
 
@@ -283,26 +279,26 @@ d3.layout.force = function() {
   };
 
   // use `node.call(force.drag)` to make nodes draggable
-  force.drag = function() {
-    if (!drag) drag = d3.behavior.drag()
-        .origin(d3_identity)
-        .on("dragstart.force", d3_layout_forceDragstart)
-        .on("drag.force", dragmove)
-        .on("dragend.force", d3_layout_forceDragend);
+  // force.drag = function() {
+  //   if (!drag) drag = d3.behavior.drag()
+  //       .origin(d3_identity)
+  //       .on("dragstart.force", d3_layout_forceDragstart)
+  //       .on("drag.force", dragmove)
+  //       .on("dragend.force", d3_layout_forceDragend);
+  //
+  //   if (!arguments.length) return drag;
+  //
+  //   this.on("mouseover.force", d3_layout_forceMouseover)
+  //       .on("mouseout.force", d3_layout_forceMouseout)
+  //       .call(drag);
+  // };
+  //
+  // function dragmove(d) {
+  //   d.px = d3.event.x, d.py = d3.event.y;
+  //   force.resume(); // restart annealing
+  // }
 
-    if (!arguments.length) return drag;
-
-    this.on("mouseover.force", d3_layout_forceMouseover)
-        .on("mouseout.force", d3_layout_forceMouseout)
-        .call(drag);
-  };
-
-  function dragmove(d) {
-    d.px = d3.event.x, d.py = d3.event.y;
-    force.resume(); // restart annealing
-  }
-
-  return d3.rebind(force, event, "on");
+  // return d3.rebind(force, event, "on");
 };
 
 // The fixed property has three bits:
