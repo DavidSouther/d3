@@ -3,6 +3,7 @@ import "start";
 import "arrays/";
 import "color/";
 import "core/";
+import "event/";
 import "format/";
 import "geo/";
 import "geom/";

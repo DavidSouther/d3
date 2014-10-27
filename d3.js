@@ -1,6 +1,6 @@
 !function() {
   var d3 = {
-    version: "3.4.13"
+    version: "3.4.13-u1"
   };
   d3.ascending = d3_ascending;
   function d3_ascending(a, b) {
@@ -759,6 +759,202 @@
       var value = method.apply(source, arguments);
       return value === source ? target : value;
     };
+  }
+  d3.dispatch = function() {
+    var dispatch = new d3_dispatch(), i = -1, n = arguments.length;
+    while (++i < n) dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+    return dispatch;
+  };
+  function d3_dispatch() {}
+  d3_dispatch.prototype.on = function(type, listener) {
+    var i = type.indexOf("."), name = "";
+    if (i >= 0) {
+      name = type.slice(i + 1);
+      type = type.slice(0, i);
+    }
+    if (type) return arguments.length < 2 ? this[type].on(name) : this[type].on(name, listener);
+    if (arguments.length === 2) {
+      if (listener == null) for (type in this) {
+        if (this.hasOwnProperty(type)) this[type].on(name, null);
+      }
+      return this;
+    }
+  };
+  function d3_dispatch_event(dispatch) {
+    var listeners = [], listenerByName = new d3_Map();
+    function event() {
+      var z = listeners, i = -1, n = z.length, l;
+      while (++i < n) if (l = z[i].on) l.apply(this, arguments);
+      return dispatch;
+    }
+    event.on = function(name, listener) {
+      var l = listenerByName.get(name), i;
+      if (arguments.length < 2) return l && l.on;
+      if (l) {
+        l.on = null;
+        listeners = listeners.slice(0, i = listeners.indexOf(l)).concat(listeners.slice(i + 1));
+        listenerByName.remove(name);
+      }
+      if (listener) listeners.push(listenerByName.set(name, {
+        on: listener
+      }));
+      return dispatch;
+    };
+    return event;
+  }
+  d3.event = null;
+  function d3_eventPreventDefault() {
+    d3.event.preventDefault();
+  }
+  function d3_eventSource() {
+    var e = d3.event, s;
+    while (s = e.sourceEvent) e = s;
+    return e;
+  }
+  function d3_eventDispatch(target) {
+    var dispatch = new d3_dispatch(), i = 0, n = arguments.length;
+    while (++i < n) dispatch[arguments[i]] = d3_dispatch_event(dispatch);
+    dispatch.of = function(thiz, argumentz) {
+      return function(e1) {
+        try {
+          var e0 = e1.sourceEvent = d3.event;
+          e1.target = target;
+          d3.event = e1;
+          dispatch[e1.type].apply(thiz, argumentz);
+        } finally {
+          d3.event = e0;
+        }
+      };
+    };
+    return dispatch;
+  }
+  var d3_arraySlice = [].slice, d3_array = function(list) {
+    return d3_arraySlice.call(list);
+  };
+  var d3_document = document, d3_documentElement = d3_document.documentElement, d3_window = window;
+  try {
+    d3_array(d3_documentElement.childNodes)[0].nodeType;
+  } catch (e) {
+    d3_array = function(list) {
+      var i = list.length, array = new Array(i);
+      while (i--) array[i] = list[i];
+      return array;
+    };
+  }
+  d3.mouse = function(container) {
+    return d3_mousePoint(container, d3_eventSource());
+  };
+  var d3_mouse_bug44083 = /WebKit/.test(d3_window.navigator.userAgent) ? -1 : 0;
+  function d3_mousePoint(container, e) {
+    if (e.changedTouches) e = e.changedTouches[0];
+    var svg = container.ownerSVGElement || container;
+    if (svg.createSVGPoint) {
+      var point = svg.createSVGPoint();
+      if (d3_mouse_bug44083 < 0 && (d3_window.scrollX || d3_window.scrollY)) {
+        svg = d3.select("body").append("svg").style({
+          position: "absolute",
+          top: 0,
+          left: 0,
+          margin: 0,
+          padding: 0,
+          border: "none"
+        }, "important");
+        var ctm = svg[0][0].getScreenCTM();
+        d3_mouse_bug44083 = !(ctm.f || ctm.e);
+        svg.remove();
+      }
+      if (d3_mouse_bug44083) point.x = e.pageX, point.y = e.pageY; else point.x = e.clientX, 
+      point.y = e.clientY;
+      point = point.matrixTransform(container.getScreenCTM().inverse());
+      return [ point.x, point.y ];
+    }
+    var rect = container.getBoundingClientRect();
+    return [ e.clientX - rect.left - container.clientLeft, e.clientY - rect.top - container.clientTop ];
+  }
+  d3.touch = function(container, touches, identifier) {
+    if (arguments.length < 3) identifier = touches, touches = d3_eventSource().changedTouches;
+    if (touches) for (var i = 0, n = touches.length, touch; i < n; ++i) {
+      if ((touch = touches[i]).identifier === identifier) {
+        return d3_mousePoint(container, touch);
+      }
+    }
+  };
+  d3.touches = function(container, touches) {
+    if (arguments.length < 2) touches = d3_eventSource().touches;
+    return touches ? d3_array(touches).map(function(touch) {
+      var point = d3_mousePoint(container, touch);
+      point.identifier = touch.identifier;
+      return point;
+    }) : [];
+  };
+  function d3_vendorSymbol(object, name) {
+    if (name in object) return name;
+    name = name.charAt(0).toUpperCase() + name.slice(1);
+    for (var i = 0, n = d3_vendorPrefixes.length; i < n; ++i) {
+      var prefixName = d3_vendorPrefixes[i] + name;
+      if (prefixName in object) return prefixName;
+    }
+  }
+  var d3_vendorPrefixes = [ "webkit", "ms", "moz", "Moz", "o", "O" ];
+  var d3_timer_queueHead, d3_timer_queueTail, d3_timer_interval, d3_timer_timeout, d3_timer_active, d3_timer_frame = d3_window[d3_vendorSymbol(d3_window, "requestAnimationFrame")] || function(callback) {
+    setTimeout(callback, 17);
+  };
+  d3.timer = function(callback, delay, then) {
+    var n = arguments.length;
+    if (n < 2) delay = 0;
+    if (n < 3) then = Date.now();
+    var time = then + delay, timer = {
+      c: callback,
+      t: time,
+      f: false,
+      n: null
+    };
+    if (d3_timer_queueTail) d3_timer_queueTail.n = timer; else d3_timer_queueHead = timer;
+    d3_timer_queueTail = timer;
+    if (!d3_timer_interval) {
+      d3_timer_timeout = clearTimeout(d3_timer_timeout);
+      d3_timer_interval = 1;
+      d3_timer_frame(d3_timer_step);
+    }
+  };
+  function d3_timer_step() {
+    var now = d3_timer_mark(), delay = d3_timer_sweep() - now;
+    if (delay > 24) {
+      if (isFinite(delay)) {
+        clearTimeout(d3_timer_timeout);
+        d3_timer_timeout = setTimeout(d3_timer_step, delay);
+      }
+      d3_timer_interval = 0;
+    } else {
+      d3_timer_interval = 1;
+      d3_timer_frame(d3_timer_step);
+    }
+  }
+  d3.timer.flush = function() {
+    d3_timer_mark();
+    d3_timer_sweep();
+  };
+  function d3_timer_mark() {
+    var now = Date.now();
+    d3_timer_active = d3_timer_queueHead;
+    while (d3_timer_active) {
+      if (now >= d3_timer_active.t) d3_timer_active.f = d3_timer_active.c(now - d3_timer_active.t);
+      d3_timer_active = d3_timer_active.n;
+    }
+    return now;
+  }
+  function d3_timer_sweep() {
+    var t0, t1 = d3_timer_queueHead, time = Infinity;
+    while (t1) {
+      if (t1.f) {
+        t1 = t0 ? t0.n = t1.n : d3_timer_queueHead = t1.n;
+      } else {
+        if (t1.t < time) time = t1.t;
+        t1 = (t0 = t1).n;
+      }
+    }
+    d3_timer_queueTail = t0;
+    return time;
   }
   function d3_identity(d) {
     return d;
@@ -2837,9 +3033,6 @@
       return d3_geo_projectionRadians(resample(stream));
     };
   }
-  var d3_arraySlice = [].slice, d3_array = function(list) {
-    return d3_arraySlice.call(list);
-  };
   d3.geo.transform = function(methods) {
     return {
       stream: function(stream) {
@@ -4497,16 +4690,6 @@
       return Math.round(a + b * t);
     };
   }
-  var d3_document = document, d3_documentElement = d3_document.documentElement, d3_window = window;
-  try {
-    d3_array(d3_documentElement.childNodes)[0].nodeType;
-  } catch (e) {
-    d3_array = function(list) {
-      var i = list.length, array = new Array(i);
-      while (i--) array[i] = list[i];
-      return array;
-    };
-  }
   d3.transform = function(string) {
     var g = d3_document.createElementNS(d3.ns.prefix.svg, "g");
     return (d3.transform = function(string) {
@@ -4792,7 +4975,7 @@
     return chord;
   };
   d3.layout.force = function() {
-    var force = {}, size = [ 1, 1 ], drag, alpha, friction = .9, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = -30, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = .1, theta2 = .64, nodes = [], links = [], distances, strengths, charges;
+    var force = {}, event = d3.dispatch("start", "tick", "end"), size = [ 1, 1 ], drag, alpha, friction = .9, linkDistance = d3_layout_forceLinkDistance, linkStrength = d3_layout_forceLinkStrength, charge = -30, chargeDistance2 = d3_layout_forceChargeDistance2, gravity = .1, theta2 = .64, nodes = [], links = [], distances, strengths, charges;
     function repulse(node) {
       return function(quad, x1, _, x2) {
         if (quad.point !== node) {
@@ -4816,6 +4999,10 @@
     }
     force.tick = function() {
       if ((alpha *= .99) < .005) {
+        event.end({
+          type: "end",
+          alpha: alpha = 0
+        });
         return true;
       }
       var n = nodes.length, m = links.length, q, i, o, s, t, l, k, x, y;
@@ -4865,6 +5052,10 @@
           o.y -= (o.py - (o.py = o.y)) * friction;
         }
       }
+      event.tick({
+        type: "tick",
+        alpha: alpha
+      });
     };
     force.nodes = function(x) {
       if (!arguments.length) return nodes;
@@ -4923,6 +5114,10 @@
       if (alpha) {
         if (x > 0) alpha = x; else alpha = 0;
       } else if (x > 0) {
+        event.start({
+          type: "start",
+          alpha: alpha = x
+        });
         d3.timer(force.tick);
       }
       return force;
@@ -4977,6 +5172,7 @@
     force.stop = function() {
       return force.alpha(0);
     };
+    return d3.rebind(force, event, "on");
   };
   function d3_layout_forceDragstart(d) {
     d.fixed |= 2;
